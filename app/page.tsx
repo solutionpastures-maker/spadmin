@@ -6,19 +6,21 @@ import {
   Megaphone,
   FileAudio,
   MessageSquare,
-  Activity,
   Database,
   CheckCircle,
   XCircle,
   Loader,
   BookOpen,
   Calendar,
-  Image as ImageIcon,
   Globe,
   HandHeart,
   Inbox,
   Radio,
   BookHeart,
+  LayoutDashboard,
+  Flame,
+  ShieldCheck,
+  Zap,
 } from 'lucide-react';
 import { useSeries } from '@/lib/hooks/useSeries';
 import { useAnnouncements } from '@/lib/hooks/useAnnouncements';
@@ -27,12 +29,15 @@ import { supabase } from '@/lib/supabase';
 import { adminJson } from '@/lib/admin-api';
 import { StatCard } from '@/components/stat-card';
 import { ActionCard } from '@/components/action-card';
+import { PageHeader } from '@/components/page-header';
 import { LoadingScreen } from '@/components/loading-screen';
+import { Button } from '@/components/ui/button';
+import { coerceDate } from '@/lib/devotional-payload';
 
 const EMPTY_LIST: never[] = [];
 
-function toDate(value: Date | string): Date {
-  return value instanceof Date ? value : new Date(value);
+function toDate(value: Date | string | null | undefined): Date {
+  return coerceDate(value);
 }
 
 export default function AdminDashboard() {
@@ -168,114 +173,134 @@ export default function AdminDashboard() {
     return <LoadingScreen message="Loading dashboard..." />;
   }
 
-  const quickActions = [
-    {
-      title: 'Live Teaching',
-      description: 'Go live and answer questions from members who cannot attend',
-      icon: Radio,
-      href: '/live',
-      color: 'accent' as const,
-    },
-    {
-      title: 'Manage Series',
-      description: 'Create and manage sermon series',
-      icon: FileAudio,
-      href: '/series',
-      color: 'primary' as const,
-    },
-    {
-      title: 'Create Announcement',
-      description: 'Post a new announcement for the church',
-      icon: Megaphone,
-      href: '/announcements/new',
-      color: 'accent' as const,
-    },
-    {
-      title: 'Manage Announcements',
-      description: 'View and manage announcements',
-      icon: Megaphone,
-      href: '/announcements',
-      color: 'primary' as const,
-    },
-    {
-      title: 'Manage Devotionals',
-      description: 'Create and manage daily devotionals',
-      icon: BookOpen,
-      href: '/devotionals',
-      color: 'accent' as const,
-    },
-    {
-      title: 'Website Content',
-      description: 'Manage footer, about, gallery, stories, and columns',
-      icon: Globe,
-      href: '/web',
-      color: 'primary' as const,
-    },
-    {
-      title: 'Moderate Comments',
-      description: 'Review and moderate user comments',
-      icon: MessageSquare,
-      href: '/comments',
-      color: 'secondary' as const,
-    },
-    {
-      title: 'Prayer Line',
-      description: 'Manage prayer sessions, requests, and comments',
-      icon: HandHeart,
-      href: '/prayer-line',
-      color: 'accent' as const,
-    },
-    {
-      title: 'Website Inbox',
-      description: 'Contact messages, newsletter, and visit requests',
-      icon: Inbox,
-      href: '/inbox',
-      color: 'primary' as const,
-    },
-    {
-      title: 'Devotion engagement',
-      description: 'Moderate devotion comments and prayer requests',
-      icon: BookHeart,
-      href: '/devotion-engagement',
-      color: 'secondary' as const,
-    },
-    {
-      title: 'Test Supabase',
-      description: 'Test connection to Supabase',
-      icon: Database,
-      onClick: testSupabaseConnection,
-      color: 'primary' as const,
-    },
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+
+  const featuredActions = [
+    { title: 'New announcement', icon: Megaphone, href: '/announcements/new' },
+    { title: 'Start live teaching', icon: Radio, href: '/live' },
+    { title: 'Add devotional', icon: Flame, href: '/devotionals/new' },
+    { title: 'Manage website', icon: Globe, href: '/web' },
+  ];
+
+  const moreActions = [
+    { title: 'Manage Series', description: 'Sermon library', icon: FileAudio, href: '/series' },
+    { title: 'Announcements', description: 'Weekly & special', icon: Megaphone, href: '/announcements' },
+    { title: 'Devotionals', description: 'Daily words', icon: BookOpen, href: '/devotionals' },
+    { title: 'Moderate Comments', description: 'Episode comments', icon: MessageSquare, href: '/comments' },
+    { title: 'Prayer Line', description: 'Sessions & requests', icon: HandHeart, href: '/prayer-line' },
+    { title: 'Website Inbox', description: 'Contact & visits', icon: Inbox, href: '/inbox' },
+    { title: 'Devotion engagement', description: 'Prayers & replies', icon: BookHeart, href: '/devotion-engagement' },
+    { title: 'Test Supabase', description: 'Connection health', icon: Database, onClick: testSupabaseConnection },
   ];
 
   return (
     <>
-      <div className="mb-10">
-        <h1 className="text-3xl sm:text-4xl font-bold text-foreground">Welcome back</h1>
-        <p className="text-muted-foreground mt-2">
-          Manage your church app content with premium tools and insights.
-        </p>
+      <PageHeader
+        icon={LayoutDashboard}
+        title={greeting}
+        description="Here’s what’s happening across Solution Pastures today."
+      />
+
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard label="App users" value={memberCount} icon={Users} color="navy" detail="Registered members" />
+        <StatCard label="Series" value={seriesList.length} icon={BookOpen} color="gold" detail="In the sermon library" />
+        <StatCard
+          label="Announcements"
+          value={announcementsList.length}
+          icon={Megaphone}
+          color="blue"
+          detail="News & weekly packs"
+        />
+        <StatCard
+          label="Devotionals"
+          value={devotionalsList.length}
+          icon={Flame}
+          color="green"
+          detail="Daily content"
+        />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-        <StatCard label="Total Users" value={memberCount} icon={Users} color="primary" />
-        <StatCard label="Series" value={seriesList.length} icon={FileAudio} color="accent" />
-        <StatCard label="Announcements" value={announcementsList.length} icon={Megaphone} color="primary" />
-        <StatCard label="Devotionals" value={devotionalsList.length} icon={BookOpen} color="accent" />
+      <div className="mt-6 grid gap-5 lg:grid-cols-[1.35fr_0.65fr]">
+        <section className="admin-surface">
+          <div className="admin-section-heading">
+            <div>
+              <h2>Quick actions</h2>
+              <p>Common tasks for your day</p>
+            </div>
+            <Zap size={18} className="text-[var(--gold)]" />
+          </div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {featuredActions.map((action) => (
+              <ActionCard key={action.title} {...action} />
+            ))}
+          </div>
+        </section>
+
+        <section className="admin-surface">
+          <div className="admin-section-heading">
+            <div>
+              <h2>Connection health</h2>
+              <p>
+                {supabaseStatus.isConnected === true
+                  ? 'All systems operational'
+                  : supabaseStatus.isConnected === false
+                    ? 'Needs attention'
+                    : 'Run a quick check'}
+              </p>
+            </div>
+            <ShieldCheck
+              size={18}
+              className={supabaseStatus.isConnected === false ? 'text-destructive' : 'text-[var(--green)]'}
+            />
+          </div>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Website</span>
+              <span className="admin-status admin-status-green">
+                <span className="admin-status-dot" />
+                Live
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Mobile app</span>
+              <span className="admin-status admin-status-green">
+                <span className="admin-status-dot" />
+                Live
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Supabase</span>
+              <span
+                className={`admin-status ${
+                  supabaseStatus.isConnected === true
+                    ? 'admin-status-green'
+                    : supabaseStatus.isConnected === false
+                      ? 'admin-status-red'
+                      : 'admin-status-gold'
+                }`}
+              >
+                <span className="admin-status-dot" />
+                {supabaseStatus.isLoading
+                  ? 'Checking…'
+                  : supabaseStatus.isConnected === true
+                    ? 'Ready'
+                    : supabaseStatus.isConnected === false
+                      ? 'Error'
+                      : 'Untested'}
+              </span>
+            </div>
+            <Button type="button" variant="outline" size="sm" className="w-full mt-1" onClick={testSupabaseConnection}>
+              {supabaseStatus.isLoading ? <Loader className="animate-spin" size={14} /> : <Database size={14} />}
+              Test connection
+            </Button>
+          </div>
+        </section>
       </div>
 
-      <div className="mb-10">
-        <h2 className="text-2xl font-bold text-foreground mb-6">Quick Actions</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {quickActions.map((action) => (
-            <ActionCard key={action.title} {...action} />
-          ))}
-        </div>
-      </div>
-
-      {supabaseStatus.message && (
+      {supabaseStatus.message ? (
         <div
-          className={`mb-10 rounded-xl border p-6 ${
+          className={`mt-5 rounded-[var(--radius)] border p-4 ${
             supabaseStatus.isConnected === true
               ? 'border-green-200 bg-green-50'
               : supabaseStatus.isConnected === false
@@ -283,63 +308,74 @@ export default function AdminDashboard() {
                 : 'border-border bg-card'
           }`}
         >
-          <div className="flex items-center gap-3">
+          <div className="flex items-start gap-3">
             {supabaseStatus.isLoading ? (
-              <Loader className="w-6 h-6 text-primary animate-spin" />
+              <Loader className="w-5 h-5 text-primary animate-spin shrink-0 mt-0.5" />
             ) : supabaseStatus.isConnected === true ? (
-              <CheckCircle className="w-6 h-6 text-green-600" />
+              <CheckCircle className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />
             ) : supabaseStatus.isConnected === false ? (
-              <XCircle className="w-6 h-6 text-red-600" />
+              <XCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
             ) : (
-              <Database className="w-6 h-6 text-muted-foreground" />
+              <Database className="w-5 h-5 text-muted-foreground shrink-0 mt-0.5" />
             )}
-            <div>
-              <h4 className="text-lg font-semibold text-foreground">Supabase Connection</h4>
+            <div className="min-w-0">
+              <h4 className="text-sm font-semibold text-primary">Supabase details</h4>
               <p className="text-sm text-muted-foreground mt-1">{supabaseStatus.message}</p>
-              {supabaseStatus.buckets.length > 0 && (
-                <p className="text-xs text-muted-foreground mt-2">
-                  Buckets: {supabaseStatus.buckets.join(', ')}
-                </p>
-              )}
+              {supabaseStatus.buckets.length > 0 ? (
+                <p className="text-xs text-muted-foreground mt-2">Buckets: {supabaseStatus.buckets.join(', ')}</p>
+              ) : null}
             </div>
           </div>
         </div>
-      )}
+      ) : null}
 
-      <div className="bg-card rounded-xl p-6 shadow-sm border border-border">
-        <div className="flex items-center gap-2 mb-6">
-          <Activity size={24} className="text-accent" />
-          <h2 className="text-2xl font-bold text-foreground">Recent Activity</h2>
+      <section className="admin-surface mt-5">
+        <div className="admin-section-heading">
+          <div>
+            <h2>More tools</h2>
+            <p>Everything else at a glance</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          {moreActions.map((action) => (
+            <ActionCard key={action.title} {...action} />
+          ))}
+        </div>
+      </section>
+
+      <section className="admin-surface mt-5">
+        <div className="admin-section-heading">
+          <div>
+            <h2>Recent activity</h2>
+            <p>A pulse on your content</p>
+          </div>
         </div>
         {recentActivity.length > 0 ? (
-          <div className="space-y-4">
+          <div>
             {recentActivity.map((activity, index) => (
-              <div
-                key={index}
-                className="flex items-center gap-4 p-3 bg-muted/50 rounded-lg border border-border/50"
-              >
-                <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
-                  <activity.icon className="w-5 h-5 text-primary" />
+              <div key={`${activity.title}-${index}`} className="admin-activity-row">
+                <div className="admin-activity-icon">
+                  <activity.icon size={16} />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground">{activity.title}</p>
-                  <p className="text-sm text-muted-foreground truncate">{activity.description}</p>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-sm font-semibold text-primary">{activity.title}</div>
+                  <div className="truncate text-xs text-muted-foreground">{activity.description}</div>
                 </div>
-                <div className="text-xs text-muted-foreground shrink-0 text-right">
+                <span className="hidden text-xs text-muted-foreground sm:block shrink-0">
                   {activity.timestamp.toLocaleDateString()}{' '}
                   {activity.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </div>
+                </span>
               </div>
             ))}
           </div>
         ) : (
           <div className="text-center py-8">
-            <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground">No recent activity to display</p>
-            <p className="text-sm text-muted-foreground/80 mt-1">Start creating content to see activity here</p>
+            <Calendar className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+            <p className="text-muted-foreground text-sm">No recent activity yet</p>
+            <p className="text-xs text-muted-foreground mt-1">Create content to see it here</p>
           </div>
         )}
-      </div>
+      </section>
     </>
   );
 }

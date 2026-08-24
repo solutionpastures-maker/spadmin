@@ -16,6 +16,9 @@ export type AnnouncementRow = {
   body: string;
   scheduled_at: string;
   pinned: boolean | null;
+  type?: string | null;
+  week_start?: string | null;
+  days?: unknown;
 };
 
 export type DevotionalRow = {
@@ -23,8 +26,12 @@ export type DevotionalRow = {
   title: string;
   content: string;
   verse: string | null;
+  verse_text?: string | null;
+  verse_reference?: string | null;
   author: string | null;
-  published_at: string;
+  published_at?: string | null;
+  date?: string | null;
+  created_at?: string | null;
   image_url: string | null;
 };
 

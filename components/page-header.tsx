@@ -14,23 +14,28 @@ interface PageHeaderProps {
 
 export function PageHeader({ title, description, icon: Icon, action, backHref }: PageHeaderProps) {
   return (
-    <div className="mb-8">
-      {backHref && (
-        <Link href={backHref} className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-4 transition-colors">
+    <div className="mb-6 sm:mb-8">
+      {backHref ? (
+        <Link
+          href={backHref}
+          className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-4 transition-colors"
+        >
           ← Back
         </Link>
-      )}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-start gap-3">
-          <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-            <Icon size={24} className="text-primary" />
+      ) : null}
+      <div className="admin-page-header !mb-0">
+        <div className="flex items-start gap-4 min-w-0">
+          <div className="admin-icon-tile">
+            <Icon size={20} />
           </div>
-          <div>
-            <h1 className="text-3xl sm:text-4xl font-bold text-foreground">{title}</h1>
-            {description && <p className="text-muted-foreground mt-1">{description}</p>}
+          <div className="min-w-0">
+            <h1 className="font-serif text-2xl font-bold tracking-tight text-primary sm:text-[28px]">{title}</h1>
+            {description ? (
+              <p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">{description}</p>
+            ) : null}
           </div>
         </div>
-        {action && <div className="shrink-0">{action}</div>}
+        {action ? <div className="shrink-0">{action}</div> : null}
       </div>
     </div>
   );

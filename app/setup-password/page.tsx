@@ -3,7 +3,7 @@
 import { Suspense, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { Church } from 'lucide-react';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 
 function SetupPasswordForm() {
@@ -31,9 +31,14 @@ function SetupPasswordForm() {
     <div className="min-h-screen bg-background flex flex-col justify-center py-12 px-4 sm:px-6">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex justify-center">
-          <div className="w-16 h-16 bg-accent rounded-full flex items-center justify-center shadow-lg">
-            <Church className="w-8 h-8 text-primary" />
-          </div>
+          <Image
+            src="/logo.png"
+            alt="Solution Pastures"
+            width={72}
+            height={72}
+            className="h-[72px] w-[72px] object-contain"
+            priority
+          />
         </div>
         <h2 className="mt-6 text-center text-3xl font-bold text-foreground">Create your password</h2>
         <p className="mt-2 text-center text-sm text-muted-foreground">

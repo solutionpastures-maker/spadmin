@@ -46,6 +46,7 @@ export function useCreateDevotional() {
       title: string;
       content: string;
       verse?: string;
+      verse_text?: string;
       author?: string;
       published_at: string;
       image_url?: string;
@@ -71,6 +72,7 @@ export function useUpdateDevotional() {
         title: string;
         content: string;
         verse: string;
+        verse_text: string;
         author: string;
         published_at: string;
         image_url: string;

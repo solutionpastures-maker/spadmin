@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useCreateDevotional } from '../../../lib/hooks/useDevotionals';
 import { uploadAdminImage } from '../../../lib/admin-api';
+import { coerceDate } from '../../../lib/devotional-payload';
 
 export default function NewDevotionalPage() {
   const router = useRouter();
@@ -21,6 +22,7 @@ export default function NewDevotionalPage() {
     title: '',
     content: '',
     verse: '',
+    verseText: '',
     author: '',
     publishedAt: '',
     imageFile: null as File | null,
@@ -37,14 +39,13 @@ export default function NewDevotionalPage() {
         imageUrl = await uploadAdminImage(formData.imageFile, 'series', path);
       }
 
-      const publishedDate = formData.publishedAt 
-        ? new Date(formData.publishedAt) 
-        : new Date();
+      const publishedDate = coerceDate(formData.publishedAt || undefined);
 
       await createMutation.mutateAsync({
         title: formData.title,
         content: formData.content,
         verse: formData.verse || undefined,
+        verse_text: formData.verseText || formData.verse || undefined,
         author: formData.author || undefined,
         published_at: publishedDate.toISOString(),
         image_url: imageUrl || undefined,
@@ -139,6 +140,20 @@ export default function NewDevotionalPage() {
                       placeholder="e.g., John 3:16"
                     />
                   </div>
+                </div>
+
+                <div>
+                  <label htmlFor="verseText" className="block text-sm font-medium text-foreground mb-2">
+                    Scripture text
+                  </label>
+                  <textarea
+                    id="verseText"
+                    rows={3}
+                    value={formData.verseText}
+                    onChange={(e) => setFormData(prev => ({ ...prev, verseText: e.target.value }))}
+                    className="w-full px-3 py-2 border border-input rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring text-foreground"
+                    placeholder="e.g., For God so loved the world…"
+                  />
                 </div>
 
                 <div>

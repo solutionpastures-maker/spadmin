@@ -1,6 +1,5 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { 
   BookOpen, 
   Plus, 
@@ -8,8 +7,6 @@ import {
   Trash2, 
   Calendar,
   User,
-  ArrowLeft,
-  Tag,
   RefreshCw
 } from 'lucide-react';
 import Link from 'next/link';
@@ -17,6 +14,7 @@ import { useDevotionals, useDeleteDevotional } from '@/lib/hooks/useDevotionals'
 import { PageHeader } from '@/components/page-header';
 import { LoadingScreen } from '@/components/loading-screen';
 import { Button } from '@/components/ui/button';
+import { formatDateTime, coerceDate } from '@/lib/devotional-payload';
 
 interface Devotional {
   id: string;
@@ -24,7 +22,7 @@ interface Devotional {
   content: string;
   verse?: string;
   author?: string;
-  publishedAt: Date;
+  publishedAt: Date | string;
   imageUrl?: string;
 }
 
@@ -45,16 +43,6 @@ export default function DevotionalsPage() {
         alert('Failed to delete devotional');
       }
     }
-  };
-
-  const formatDate = (date: Date) => {
-    return new Intl.DateTimeFormat('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    }).format(date);
   };
 
   if (isLoading) {
@@ -112,7 +100,7 @@ export default function DevotionalsPage() {
                     {devotionals.filter(d => {
                       const monthAgo = new Date();
                       monthAgo.setMonth(monthAgo.getMonth() - 1);
-                      return d.publishedAt > monthAgo;
+                      return coerceDate(d.publishedAt) > monthAgo;
                     }).length}
                   </p>
                 </div>
@@ -186,7 +174,7 @@ export default function DevotionalsPage() {
                         )}
                         <div className="flex items-center">
                           <Calendar size={14} className="mr-1" />
-                          {formatDate(devotional.publishedAt)}
+                          {formatDateTime(devotional.publishedAt)}
                         </div>
                       </div>
                     </div>

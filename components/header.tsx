@@ -1,7 +1,10 @@
 'use client';
 
-import { LogOut, RefreshCw, Church, User } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import Image from 'next/image';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { LogOut, RefreshCw, User, BookOpen, Megaphone, Radio, LayoutDashboard, Flame } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface HeaderProps {
   userName?: string;
@@ -11,6 +14,14 @@ interface HeaderProps {
   isRefreshing?: boolean;
 }
 
+const desktopNav = [
+  { href: '/', label: 'Dashboard', icon: LayoutDashboard, match: (p: string) => p === '/' },
+  { href: '/live', label: 'Live', icon: Radio, match: (p: string) => p.startsWith('/live') },
+  { href: '/series', label: 'Series', icon: BookOpen, match: (p: string) => p.startsWith('/series') },
+  { href: '/announcements', label: 'News', icon: Megaphone, match: (p: string) => p.startsWith('/announcements') },
+  { href: '/devotionals', label: 'Devotion', icon: Flame, match: (p: string) => p.startsWith('/devotionals') || p.startsWith('/devotion-engagement') },
+];
+
 export function Header({
   userName = 'Admin',
   userEmail = '',
@@ -18,55 +29,68 @@ export function Header({
   onSignOut,
   isRefreshing,
 }: HeaderProps) {
+  const pathname = usePathname();
+
   return (
-    <header className="fixed top-0 left-0 right-0 z-40 h-16 bg-card border-b border-border shadow-sm">
-      <div className="flex items-center justify-between h-full px-4 sm:px-6 max-w-7xl mx-auto">
-        <div className="flex items-center gap-2 min-w-0">
-          <div className="w-9 h-9 bg-accent rounded-lg flex items-center justify-center shrink-0">
-            <Church size={20} className="text-primary" />
-          </div>
-          <div className="min-w-0 hidden sm:block">
-            <p className="text-sm font-bold text-foreground leading-tight">Solution Pastures</p>
-            <p className="text-xs text-muted-foreground">Admin</p>
-          </div>
+    <header className="admin-header">
+      <div className="mx-auto flex h-full w-full max-w-[1280px] items-center justify-between px-4 sm:px-6">
+        <div className="flex items-center gap-8 min-w-0">
+          <Link href="/" className="flex items-center gap-3 min-w-0 shrink-0">
+            <Image
+              src="/logo.png"
+              alt="Solution Pastures"
+              width={31}
+              height={31}
+              className="h-[31px] w-[31px] object-contain"
+              priority
+            />
+            <div className="min-w-0">
+              <div className="font-serif text-[17px] font-bold tracking-tight text-primary leading-tight">
+                Solution Pastures
+              </div>
+              <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                Admin
+              </div>
+            </div>
+          </Link>
+
+          <nav className="admin-desktop-nav">
+            {desktopNav.map(({ href, label, icon: Icon, match }) => (
+              <Link key={href} href={href} className={cn(match(pathname) && 'active')}>
+                <Icon size={16} />
+                {label}
+              </Link>
+            ))}
+          </nav>
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-4">
-          {onRefresh && (
-            <Button
+        <div className="flex items-center gap-2 sm:gap-3">
+          {onRefresh ? (
+            <button
               type="button"
-              variant="ghost"
-              size="sm"
+              className="admin-header-icon"
               onClick={onRefresh}
               disabled={isRefreshing}
-              className="text-muted-foreground hover:text-foreground"
+              aria-label="Refresh"
             >
               <RefreshCw size={16} className={isRefreshing ? 'animate-spin' : ''} />
-              <span className="hidden sm:inline">Refresh</span>
-            </Button>
-          )}
+            </button>
+          ) : null}
 
-          <div className="flex items-center gap-2 pl-2 sm:pl-4 border-l border-border">
-            <div className="text-right hidden md:block">
-              <p className="text-sm font-semibold text-foreground truncate max-w-[140px]">{userName}</p>
-              <p className="text-xs text-muted-foreground truncate max-w-[140px]">{userEmail}</p>
-            </div>
-            <div className="w-9 h-9 rounded-full bg-accent/30 flex items-center justify-center shrink-0">
-              <User size={16} className="text-primary" />
-            </div>
-            {onSignOut && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={onSignOut}
-                className="text-muted-foreground hover:text-destructive"
-                aria-label="Sign out"
-              >
-                <LogOut size={18} />
-              </Button>
-            )}
+          <div className="hidden text-right sm:block">
+            <div className="text-sm font-semibold text-primary truncate max-w-[140px]">{userName}</div>
+            <div className="text-[11px] text-muted-foreground truncate max-w-[140px]">{userEmail}</div>
           </div>
+
+          <div className="admin-avatar" aria-hidden>
+            <User size={16} />
+          </div>
+
+          {onSignOut ? (
+            <button type="button" className="admin-header-icon" onClick={onSignOut} aria-label="Sign out">
+              <LogOut size={16} />
+            </button>
+          ) : null}
         </div>
       </div>
     </header>

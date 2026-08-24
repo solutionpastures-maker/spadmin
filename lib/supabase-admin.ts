@@ -10,6 +10,12 @@ import 'server-only';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { AboutContent, FooterContent, WebsiteContentRow, InboxStatus, ContactMessageRow, NewsletterSubscriberRow, VisitRequestRow, EventRegistrationRow } from '@/lib/types';
 import type { AnnouncementRow, DevotionalRow, SeriesRow, UserProfileRow } from './supabase-rows';
+import {
+  applyKnownDevotionalColumns,
+  parseNotNullColumn,
+  toIsoDate,
+  valueForRequiredColumn,
+} from './devotional-payload';
 
 let supabaseAdminInstance: SupabaseClient | null = null;
 
@@ -202,13 +208,7 @@ export const getAnnouncements = async () => {
   
   if (error) throw error;
   
-  return data.map((a: AnnouncementRow) => ({
-    id: a.id,
-    title: a.title,
-    body: a.body,
-    scheduledAt: new Date(a.scheduled_at),
-    pinned: a.pinned || false,
-  }));
+  return data.map((a: AnnouncementRow) => mapAnnouncementRow(a));
 };
 
 export const getAnnouncementById = async (id: string) => {
@@ -220,24 +220,55 @@ export const getAnnouncementById = async (id: string) => {
   
   if (error) throw error;
   
-  return {
-    id: data.id,
-    title: data.title,
-    body: data.body,
-    scheduledAt: new Date(data.scheduled_at),
-    pinned: data.pinned || false,
-  };
+  return mapAnnouncementRow(data);
 };
+
+function mapAnnouncementRow(a: AnnouncementRow & Record<string, unknown>) {
+  const days = Array.isArray(a.days) ? a.days : [];
+  return {
+    id: a.id,
+    title: a.title,
+    body: a.body,
+    scheduledAt: toIsoDate(a.scheduled_at),
+    pinned: a.pinned || false,
+    type: (a.type === 'weekly' ? 'weekly' : 'special') as 'special' | 'weekly',
+    weekStart: a.week_start || null,
+    days: days.map((d: Record<string, unknown>) => ({
+      day: d.day as string,
+      text: String(d.text || ''),
+      startsAt: (d.startsAt as string) || null,
+      location: (d.location as string) || null,
+    })),
+  };
+}
 
 export const createAnnouncement = async (announcementData: {
   title: string;
   body: string;
-  scheduled_at: string; // ISO timestamp
+  scheduled_at: string;
   pinned?: boolean;
+  type?: 'special' | 'weekly';
+  week_start?: string | null;
+  days?: Array<{
+    day: string;
+    text: string;
+    startsAt?: string | null;
+    location?: string | null;
+  }>;
 }) => {
+  const payload: Record<string, unknown> = {
+    title: announcementData.title,
+    body: announcementData.body,
+    scheduled_at: announcementData.scheduled_at,
+    pinned: announcementData.pinned ?? false,
+  };
+  if (announcementData.type) payload.type = announcementData.type;
+  if (announcementData.week_start !== undefined) payload.week_start = announcementData.week_start;
+  if (announcementData.days !== undefined) payload.days = announcementData.days;
+
   const { data, error } = await getSupabaseAdmin()
     .from('announcements')
-    .insert(announcementData)
+    .insert(payload)
     .select()
     .single();
   
@@ -245,12 +276,23 @@ export const createAnnouncement = async (announcementData: {
   return data;
 };
 
-export const updateAnnouncement = async (id: string, updates: Partial<{
-  title: string;
-  body: string;
-  scheduled_at: string;
-  pinned: boolean;
-}>) => {
+export const updateAnnouncement = async (
+  id: string,
+  updates: Partial<{
+    title: string;
+    body: string;
+    scheduled_at: string;
+    pinned: boolean;
+    type: 'special' | 'weekly';
+    week_start: string | null;
+    days: Array<{
+      day: string;
+      text: string;
+      startsAt?: string | null;
+      location?: string | null;
+    }>;
+  }>
+) => {
   const { data, error } = await getSupabaseAdmin()
     .from('announcements')
     .update(updates)
@@ -263,11 +305,25 @@ export const updateAnnouncement = async (id: string, updates: Partial<{
 };
 
 export const deleteAnnouncement = async (id: string) => {
+  // Hub rows keep announcementId in JSON — remove orphans even without the SQL trigger.
+  const { data: related } = await getSupabaseAdmin()
+    .from('notifications')
+    .select('id, data');
+  const orphanIds = (related || [])
+    .filter((row) => {
+      const payload = row.data as { announcementId?: string } | null;
+      return payload?.announcementId === id;
+    })
+    .map((row) => row.id as string);
+  if (orphanIds.length) {
+    await getSupabaseAdmin().from('notifications').delete().in('id', orphanIds);
+  }
+
   const { error } = await getSupabaseAdmin()
     .from('announcements')
     .delete()
     .eq('id', id);
-  
+
   if (error) throw error;
 };
 
@@ -275,23 +331,35 @@ export const deleteAnnouncement = async (id: string) => {
 // DEVOTIONALS FUNCTIONS
 // ============================================
 
+function mapDevotionalRow(d: DevotionalRow & Record<string, unknown>) {
+  return {
+    id: d.id,
+    title: d.title,
+    content: d.content,
+    verse: d.verse || d.verse_reference || '',
+    verseText: d.verse_text || '',
+    author: d.author,
+    publishedAt: toIsoDate(d.published_at || d.date || d.created_at),
+    imageUrl: d.image_url,
+  };
+}
+
 export const getDevotionals = async () => {
   const { data, error } = await getSupabaseAdmin()
     .from('devotionals')
     .select('*')
     .order('published_at', { ascending: false });
   
-  if (error) throw error;
+  if (error) {
+    const fallback = await getSupabaseAdmin()
+      .from('devotionals')
+      .select('*')
+      .order('date', { ascending: false });
+    if (fallback.error) throw error;
+    return (fallback.data || []).map((d: DevotionalRow) => mapDevotionalRow(d));
+  }
   
-  return data.map((d: DevotionalRow) => ({
-    id: d.id,
-    title: d.title,
-    content: d.content,
-    verse: d.verse,
-    author: d.author,
-    publishedAt: new Date(d.published_at),
-    imageUrl: d.image_url,
-  }));
+  return (data || []).map((d: DevotionalRow) => mapDevotionalRow(d));
 };
 
 export const getDevotionalById = async (id: string) => {
@@ -302,53 +370,90 @@ export const getDevotionalById = async (id: string) => {
     .single();
   
   if (error) throw error;
-  
-  return {
-    id: data.id,
-    title: data.title,
-    content: data.content,
-    verse: data.verse,
-    author: data.author,
-    publishedAt: new Date(data.published_at),
-    imageUrl: data.image_url,
-  };
+  return mapDevotionalRow(data);
 };
+
+async function listExistingColumns(table: string): Promise<string[]> {
+  const { data } = await getSupabaseAdmin().from(table).select('*').limit(1);
+  return data?.[0] ? Object.keys(data[0]) : [];
+}
+
+async function writeDevotional(
+  action: 'insert' | 'update',
+  payload: Record<string, unknown>,
+  id?: string
+) {
+  const canonical = new Set([
+    'title',
+    'content',
+    'verse',
+    'author',
+    'published_at',
+    'image_url',
+  ]);
+  const existing = await listExistingColumns('devotionals');
+  const allowed = new Set(existing.length ? existing : canonical);
+
+  let source = { ...payload };
+  if (existing.length) {
+    source = applyKnownDevotionalColumns(source, existing);
+  }
+
+  for (let attempt = 0; attempt < 12; attempt++) {
+    const row = Object.fromEntries(
+      Object.entries(source).filter(([key]) => allowed.has(key))
+    );
+    const query =
+      action === 'insert'
+        ? getSupabaseAdmin().from('devotionals').insert(row)
+        : getSupabaseAdmin().from('devotionals').update(row).eq('id', id!);
+
+    const { data, error } = await query.select().single();
+    if (!error) return data;
+
+    const missing = parseNotNullColumn(error.message || '');
+    if (!missing) throw error;
+    allowed.add(missing);
+    source = {
+      ...source,
+      [missing]: valueForRequiredColumn(missing, source),
+    };
+  }
+
+  throw new Error('Could not save devotional after filling required columns');
+}
 
 export const createDevotional = async (devotionalData: {
   title: string;
   content: string;
   verse?: string;
+  verse_text?: string;
   author?: string;
-  published_at: string; // ISO timestamp
+  published_at: string;
   image_url?: string;
 }) => {
-  const { data, error } = await getSupabaseAdmin()
-    .from('devotionals')
-    .insert(devotionalData)
-    .select()
-    .single();
-  
-  if (error) throw error;
-  return data;
+  const published_at = devotionalData.published_at || new Date().toISOString();
+  return writeDevotional('insert', {
+    title: devotionalData.title,
+    content: devotionalData.content,
+    verse: devotionalData.verse || '',
+    verse_text: devotionalData.verse_text || '',
+    author: devotionalData.author || '',
+    published_at,
+    image_url: devotionalData.image_url || null,
+  });
 };
 
 export const updateDevotional = async (id: string, updates: Partial<{
   title: string;
   content: string;
   verse: string;
+  verse_text: string;
   author: string;
   published_at: string;
   image_url: string;
 }>) => {
-  const { data, error } = await getSupabaseAdmin()
-    .from('devotionals')
-    .update(updates)
-    .eq('id', id)
-    .select()
-    .single();
-  
-  if (error) throw error;
-  return data;
+  return writeDevotional('update', { ...updates }, id);
 };
 
 export const deleteDevotional = async (id: string) => {

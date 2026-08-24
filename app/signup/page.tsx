@@ -3,7 +3,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Eye, EyeOff, Church, User, Mail, Lock, Building, KeyRound } from 'lucide-react';
+import { Eye, EyeOff, User, Mail, Lock, Building, KeyRound } from 'lucide-react';
+import Image from 'next/image';
 import { signInUser } from '@/lib/firebase-utils';
 import { Button } from '@/components/ui/button';
 
@@ -118,9 +119,14 @@ export default function SignupPage() {
     <div className="min-h-screen bg-background flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex justify-center">
-          <div className="w-16 h-16 bg-accent rounded-full flex items-center justify-center">
-            <Church className="w-8 h-8 text-primary" />
-          </div>
+          <Image
+            src="/logo.png"
+            alt="Solution Pastures"
+            width={72}
+            height={72}
+            className="h-[72px] w-[72px] object-contain"
+            priority
+          />
         </div>
         <h2 className="mt-6 text-center text-3xl font-extrabold text-foreground">
           Create Admin Account

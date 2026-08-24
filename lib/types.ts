@@ -73,13 +73,23 @@ export interface Comment {
   } | null;
 }
 
+export interface AnnouncementDay {
+  day: 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
+  text: string;
+  startsAt?: string | null;
+  location?: string | null;
+}
+
 export interface Announcement {
   id: string;
   title: string;
   body: string;
-  scheduledAt: Date;
+  scheduledAt: Date | string;
   pinned: boolean;
   createdAt?: Date;
+  type?: 'special' | 'weekly';
+  weekStart?: string | null;
+  days?: AnnouncementDay[];
 }
 
 export interface Devotional {
@@ -87,8 +97,9 @@ export interface Devotional {
   title: string;
   content: string;
   verse?: string; // e.g., "John 3:16"
+  verseText?: string;
   author?: string;
-  publishedAt: Date;
+  publishedAt: Date | string;
   imageUrl?: string;
 }
 

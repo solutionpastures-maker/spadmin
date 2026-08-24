@@ -43,12 +43,36 @@ export function useCreateAnnouncement() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: { title: string; body: string; scheduled_at: string; pinned?: boolean }) =>
-      fetchJson('/api/announcements', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      }),
+    mutationFn: async (data: {
+      title: string;
+      body: string;
+      scheduled_at: string;
+      pinned?: boolean;
+      type?: 'special' | 'weekly';
+      week_start?: string | null;
+      days?: Array<{
+        day: string;
+        text: string;
+        startsAt?: string | null;
+        location?: string | null;
+      }>;
+    }) => {
+      try {
+        return await fetchJson('/api/announcements', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : '';
+        if (/type|week_start|days|column/i.test(message)) {
+          throw new Error(
+            'Database is missing the new announcement columns. Run announcements-structured.sql in Supabase, then try again.'
+          );
+        }
+        throw error;
+      }
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: announcementKeys.lists() });
     },
@@ -59,7 +83,26 @@ export function useUpdateAnnouncement() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, updates }: { id: string; updates: Partial<{ title: string; body: string; scheduled_at: string; pinned: boolean }> }) =>
+    mutationFn: ({
+      id,
+      updates,
+    }: {
+      id: string;
+      updates: Partial<{
+        title: string;
+        body: string;
+        scheduled_at: string;
+        pinned: boolean;
+        type: 'special' | 'weekly';
+        week_start: string | null;
+        days: Array<{
+          day: string;
+          text: string;
+          startsAt?: string | null;
+          location?: string | null;
+        }>;
+      }>;
+    }) =>
       fetchJson(`/api/announcements/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },

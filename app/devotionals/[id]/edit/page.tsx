@@ -15,9 +15,10 @@ import { useDevotionalById, useUpdateDevotional } from '@/lib/hooks/useDevotiona
 import { uploadAdminImage } from '@/lib/admin-api';
 import { LoadingScreen } from '@/components/loading-screen';
 import type { Devotional } from '@/lib/types';
+import { coerceDate } from '@/lib/devotional-payload';
 
 function toDatetimeLocalValue(date: Date | string): string {
-  const d = new Date(date);
+  const d = coerceDate(date);
   const offset = d.getTimezoneOffset();
   const local = new Date(d.getTime() - offset * 60 * 1000);
   return local.toISOString().slice(0, 16);
@@ -35,6 +36,7 @@ export default function EditDevotionalPage() {
     title: '',
     content: '',
     verse: '',
+    verseText: '',
     author: '',
     publishedAt: '',
     imageFile: null as File | null,
@@ -47,6 +49,7 @@ export default function EditDevotionalPage() {
         title: item.title,
         content: item.content,
         verse: item.verse || '',
+        verseText: item.verseText || '',
         author: item.author || '',
         publishedAt: toDatetimeLocalValue(item.publishedAt),
         imageFile: null,
@@ -66,9 +69,7 @@ export default function EditDevotionalPage() {
         imageUrl = await uploadAdminImage(formData.imageFile, 'series', path);
       }
 
-      const publishedDate = formData.publishedAt
-        ? new Date(formData.publishedAt)
-        : new Date();
+      const publishedDate = coerceDate(formData.publishedAt || undefined);
 
       await updateMutation.mutateAsync({
         id,
@@ -76,6 +77,7 @@ export default function EditDevotionalPage() {
           title: formData.title,
           content: formData.content,
           verse: formData.verse || undefined,
+          verse_text: formData.verseText || formData.verse || undefined,
           author: formData.author || undefined,
           published_at: publishedDate.toISOString(),
           image_url: imageUrl || undefined,
@@ -173,6 +175,20 @@ export default function EditDevotionalPage() {
                       placeholder="e.g., John 3:16"
                     />
                   </div>
+                </div>
+
+                <div className="md:col-span-2">
+                  <label htmlFor="verseText" className="block text-sm font-medium text-foreground mb-2">
+                    Scripture text
+                  </label>
+                  <textarea
+                    id="verseText"
+                    rows={3}
+                    value={formData.verseText}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, verseText: e.target.value }))}
+                    className="w-full px-3 py-2 border border-input rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring text-foreground"
+                    placeholder="e.g., For God so loved the world…"
+                  />
                 </div>
 
                 <div>

@@ -1,52 +1,55 @@
-import { LucideIcon } from 'lucide-react'
+import { LucideIcon } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface StatCardProps {
-  label: string
-  value: string | number
-  icon: LucideIcon
-  color?: 'primary' | 'accent' | 'secondary'
+  label: string;
+  value: string | number;
+  icon: LucideIcon;
+  detail?: string;
+  color?: 'primary' | 'accent' | 'secondary' | 'navy' | 'gold' | 'blue' | 'green';
   trend?: {
-    value: number
-    isPositive: boolean
-  }
+    value: number;
+    isPositive: boolean;
+  };
 }
+
+const toneMap = {
+  primary: 'navy',
+  navy: 'navy',
+  accent: 'gold',
+  gold: 'gold',
+  secondary: 'blue',
+  blue: 'blue',
+  green: 'green',
+} as const;
 
 export function StatCard({
   label,
   value,
   icon: Icon,
-  color = 'primary',
+  detail,
+  color = 'navy',
   trend,
 }: StatCardProps) {
-  const colorClasses = {
-    primary: 'bg-primary/10 text-primary',
-    accent: 'bg-accent/10 text-accent',
-    secondary: 'bg-secondary/10 text-secondary',
-  }
+  const tone = toneMap[color] || 'navy';
 
   return (
-    <div className="bg-card rounded-xl p-6 shadow-sm border-2 border-primary/30 hover:shadow-lg hover:border-primary/50 transition-all duration-300 relative overflow-hidden">
-      <div className="absolute top-0 left-0 w-1 h-full bg-primary"></div>
-      <div className="flex items-start justify-between">
-        <div className="flex-1">
-          <p className="text-sm font-medium text-muted-foreground mb-2">{label}</p>
-          <div className="flex items-baseline gap-2">
-            <h3 className="text-3xl font-bold text-foreground">{value}</h3>
-            {trend && (
-              <span
-                className={`text-xs font-semibold ${
-                  trend.isPositive ? 'text-green-600' : 'text-red-600'
-                }`}
-              >
-                {trend.isPositive ? '↑' : '↓'} {Math.abs(trend.value)}%
-              </span>
-            )}
-          </div>
+    <div className="admin-stat-card">
+      <div className={cn('admin-stat-icon', tone)}>
+        <Icon size={18} />
+      </div>
+      <div className="min-w-0">
+        <div className="text-[12px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">{label}</div>
+        <div className="mt-1 flex items-baseline gap-2">
+          <div className="text-2xl font-bold text-primary">{value}</div>
+          {trend ? (
+            <span className={cn('text-xs font-semibold', trend.isPositive ? 'text-green' : 'text-destructive')}>
+              {trend.isPositive ? '↑' : '↓'} {Math.abs(trend.value)}%
+            </span>
+          ) : null}
         </div>
-        <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${colorClasses[color]}`}>
-          <Icon size={24} />
-        </div>
+        {detail ? <div className="mt-1 text-xs text-muted-foreground">{detail}</div> : null}
       </div>
     </div>
-  )
+  );
 }

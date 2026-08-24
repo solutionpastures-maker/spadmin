@@ -100,7 +100,7 @@ export function AppShell({ children }: AppShellProps) {
         onSignOut={handleSignOut}
         isRefreshing={isRefreshing}
       />
-      <main className="pt-16 pb-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <main className="mx-auto max-w-[1280px] px-4 pb-28 pt-8 sm:px-6 sm:pt-10 md:pb-10">
         {children}
       </main>
       <BottomNav />

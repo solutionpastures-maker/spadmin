@@ -6,10 +6,7 @@ import {
   Edit, 
   Trash2, 
   Eye, 
-  EyeOff,
   Calendar,
-  User,
-  ArrowLeft,
   RefreshCw
 } from 'lucide-react';
 import Link from 'next/link';
@@ -17,6 +14,7 @@ import { useAnnouncements, useDeleteAnnouncement } from '@/lib/hooks/useAnnounce
 import { PageHeader } from '@/components/page-header';
 import { LoadingScreen } from '@/components/loading-screen';
 import { Button } from '@/components/ui/button';
+import { formatDateTime, coerceDate } from '@/lib/devotional-payload';
 
 export default function AnnouncementsPage() {
   const { data: announcements = [], isLoading, refetch, isRefetching } = useAnnouncements();
@@ -35,16 +33,6 @@ export default function AnnouncementsPage() {
         alert('Failed to delete announcement');
       }
     }
-  };
-
-  const formatDate = (date: Date) => {
-    return new Intl.DateTimeFormat('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    }).format(date);
   };
 
   if (isLoading) {
@@ -117,7 +105,7 @@ export default function AnnouncementsPage() {
                     {announcements.filter(a => {
                       const monthAgo = new Date();
                       monthAgo.setMonth(monthAgo.getMonth() - 1);
-                      return a.scheduledAt > monthAgo;
+                      return coerceDate(a.scheduledAt) > monthAgo;
                     }).length}
                   </p>
                 </div>
@@ -160,6 +148,9 @@ export default function AnnouncementsPage() {
                             Pinned
                           </span>
                         )}
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-muted text-muted-foreground capitalize">
+                          {announcement.type === 'weekly' ? 'Weekly activities' : 'Special'}
+                        </span>
                       </div>
                       <p className="mt-1 text-sm text-muted-foreground line-clamp-2">
                         {announcement.body}
@@ -167,7 +158,7 @@ export default function AnnouncementsPage() {
                       <div className="mt-2 flex items-center space-x-4 text-sm text-muted-foreground">
                         <div className="flex items-center">
                           <Calendar size={14} className="mr-1" />
-                          {formatDate(announcement.scheduledAt)}
+                          {formatDateTime(announcement.scheduledAt)}
                         </div>
                       </div>
                     </div>

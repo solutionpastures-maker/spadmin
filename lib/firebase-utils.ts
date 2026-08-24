@@ -73,7 +73,9 @@ export const getCurrentUser = async (): Promise<AuthUser | null> => {
 
 export const onAuthChange = (callback: (user: AuthUser | null) => void) => {
   const { data } = supabase.auth.onAuthStateChange((_event, session) => {
-    callback(session?.user ? mapUser(session.user) : null);
+    const mapped = session?.user ? mapUser(session.user) : null;
+    // Defer so /api/auth/me (getSession) is not called under the auth lock.
+    setTimeout(() => callback(mapped), 0);
   });
   return () => data.subscription.unsubscribe();
 };

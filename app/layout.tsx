@@ -5,6 +5,10 @@ import { Providers } from "../lib/providers";
 export const metadata: Metadata = {
   title: "Solution Pastures Admin",
   description: "Premium church management software",
+  icons: {
+    icon: "/logo.png",
+    apple: "/logo.png",
+  },
 };
 
 export default function RootLayout({
